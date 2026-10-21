@@ -1,0 +1,2398 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuphead Web - Edição Anos 1930</title>
+    <style>
+        /* ==========================================================================
+           ESTILIZAÇÃO GERAL E TEMA RETRÔ ANOS 1930 (RNF04)
+           ========================================================================== */
+        :root {
+            --cor-papel-antigo: #f4e7c5;
+            --cor-sepia-escura: #2b1d0e;
+            --cor-vermelho-vintage: #d32f2f;
+            --cor-amarelo-ouro: #fbc02d;
+            --cor-azul-ciano: #0288d1;
+            --sombra-cartoon: 4px 4px 0px #1a1108;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: #120c06;
+            color: var(--cor-sepia-escura);
+            font-family: 'Courier New', Courier, Georgia, serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Moldura da Televisão/Cinema Antigo */
+        #game-wrapper {
+            position: relative;
+            width: 960px;
+            max-width: 98vw;
+            aspect-ratio: 16 / 9;
+            border: 8px solid var(--cor-sepia-escura);
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), inset 0 0 40px rgba(0,0,0,0.5);
+            overflow: hidden;
+            background-color: var(--cor-papel-antigo);
+        }
+
+        /* Canvas ocupa 100% do container mantendo a resolução lógica interna */
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            /* Filtro sutil para aspecto de desenho antigo */
+            filter: sepia(0.22) contrast(1.08) brightness(0.98);
+        }
+
+        /* ==========================================================================
+           EFEITOS DE PELÍCULA ANTIGA (VINHETA, RISCOS E GRANULAÇÃO)
+           ========================================================================== */
+        .efeito-pelicula {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 15;
+            /* Vinheta escura nas bordas + scanlines sutis */
+            background: 
+                radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(25, 15, 5, 0.65) 100%),
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(0, 0, 0, 0.04),
+                    rgba(0, 0, 0, 0.04) 1px,
+                    transparent 1px,
+                    transparent 3px
+                );
+            animation: flicker 0.15s infinite;
+        }
+
+        /* Leve oscilação de luz característica de projetores dos anos 1930 */
+        @keyframes flicker {
+            0% { opacity: 0.92; }
+            50% { opacity: 1; }
+            100% { opacity: 0.95; }
+        }
+
+        /* ==========================================================================
+           HUD SUPERIOR - PONTUAÇÃO, HP DO JOGADOR E BARRA DO CHEFE (RF02)
+           ========================================================================== */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            pointer-events: none;
+            background: linear-gradient(to bottom, rgba(43, 29, 14, 0.45), transparent);
+        }
+
+        .hud-bloco {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--cor-papel-antigo);
+            border: 3px solid var(--cor-sepia-escura);
+            border-radius: 12px;
+            padding: 6px 14px;
+            box-shadow: var(--sombra-cartoon);
+            font-weight: 900;
+            font-size: 1.05rem;
+            letter-spacing: 0.5px;
+        }
+
+        .hp-coracoes {
+            display: flex;
+            gap: 6px;
+        }
+
+        .icone-hp {
+            display: inline-block;
+            padding: 2px 8px;
+            background-color: var(--cor-vermelho-vintage);
+            color: #fff;
+            border: 2px solid var(--cor-sepia-escura);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            box-shadow: 2px 2px 0 var(--cor-sepia-escura);
+            transition: transform 0.2s, opacity 0.2s;
+        }
+
+        .icone-hp.perdido {
+            background-color: #7a6e5d;
+            opacity: 0.4;
+            transform: scale(0.85);
+        }
+
+        /* Barra de Vida do Chefe */
+        .boss-hud-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 260px;
+        }
+
+        .boss-header {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .barra-externa {
+            width: 100%;
+            height: 16px;
+            background-color: #3e2c1c;
+            border: 3px solid var(--cor-sepia-escura);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #boss-hp-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff9800, #e53935);
+            transition: width 0.12s ease-out;
+        }
+
+        /* Botão de Som no HUD Superior */
+        .btn-som-hud {
+            pointer-events: auto;
+            background: var(--cor-amarelo-ouro);
+            color: var(--cor-sepia-escura);
+            border: 3px solid var(--cor-sepia-escura);
+            border-radius: 12px;
+            padding: 6px 12px;
+            font-family: inherit;
+            font-weight: 900;
+            font-size: 0.9rem;
+            cursor: pointer;
+            box-shadow: var(--sombra-cartoon);
+            transition: transform 0.1s;
+        }
+
+        .btn-som-hud:hover {
+            background: #ffd54f;
+            transform: scale(1.04);
+        }
+
+        /* ==========================================================================
+           SUPER METER: 5 CARTAS DE ESPECIAL NO CANTO INFERIOR ESQUERDO
+           ========================================================================== */
+        #hud-cartas-container {
+            position: absolute;
+            bottom: 14px;
+            left: 20px;
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            z-index: 12;
+            pointer-events: none;
+        }
+
+        .carta-slot {
+            width: 34px;
+            height: 48px;
+            background: rgba(26, 17, 8, 0.75);
+            border: 3px solid var(--cor-sepia-escura);
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 3px 3px 0px #120c06;
+            transition: transform 0.15s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        }
+
+        /* Preenchimento que sobe conforme o jogador causa dano */
+        .carta-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            background: linear-gradient(to top, #0288d1, #4fc3f7);
+            transition: height 0.08s linear;
+        }
+
+        /* Quando a carta atinge 100% de carga */
+        .carta-slot.cheia {
+            transform: translateY(-5px) scale(1.06);
+            border-color: #fff;
+            box-shadow: 0 0 12px rgba(251, 192, 45, 0.9), 3px 3px 0px #120c06;
+        }
+
+        .carta-slot.cheia .carta-fill {
+            background: linear-gradient(135deg, #fbc02d, #f57f17);
+        }
+
+        .carta-simbolo {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.85);
+            text-shadow: 1px 1px 0 #000;
+            z-index: 2;
+        }
+
+        /* Efeito quando todas as 5 cartas estão cheias (GOLPE SUPREMO PRONTO!) */
+        #hud-cartas-container.supremo-pronto .carta-slot.cheia {
+            animation: pulsarCartaSuprema 0.45s infinite alternate;
+            border-color: #ffeb3b;
+        }
+
+        @keyframes pulsarCartaSuprema {
+            from { transform: translateY(-5px) scale(1.05); filter: brightness(1); }
+            to { transform: translateY(-9px) scale(1.13); filter: brightness(1.3); }
+        }
+
+        #aviso-especial-hud {
+            background: var(--cor-papel-antigo);
+            border: 3px solid var(--cor-sepia-escura);
+            border-radius: 10px;
+            padding: 4px 10px;
+            font-weight: 900;
+            font-size: 0.8rem;
+            box-shadow: 3px 3px 0 #120c06;
+            margin-left: 6px;
+            margin-bottom: 4px;
+            color: var(--cor-sepia-escura);
+        }
+
+        /* ==========================================================================
+           TELAS SOBREPOSTAS: MENU INICIAL, PAUSA E FIM DE JOGO (RF01, RF03, RF04, RF06)
+           ========================================================================== */
+        .overlay-screen {
+            position: absolute;
+            inset: 0;
+            background: rgba(24, 15, 7, 0.82);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .oculto {
+            display: none !important;
+        }
+
+        .cartao-retro {
+            background-color: var(--cor-papel-antigo);
+            border: 6px double var(--cor-sepia-escura);
+            border-radius: 20px;
+            padding: 28px 36px;
+            max-width: 680px;
+            width: 95%;
+            box-shadow: 10px 10px 0px #0d0804;
+            position: relative;
+        }
+
+        .subtitulo-epoca {
+            font-size: 0.9rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: #6d4c2f;
+            margin-bottom: 4px;
+            font-weight: bold;
+        }
+
+        .titulo-principal {
+            font-family: Impact, 'Arial Black', sans-serif;
+            font-size: 3.4rem;
+            color: var(--cor-vermelho-vintage);
+            text-shadow: 4px 4px 0px var(--cor-sepia-escura), -2px -2px 0px #fff;
+            letter-spacing: 2px;
+            margin-bottom: 16px;
+            line-height: 1;
+        }
+
+        /* Grade de Instruções de Controle (RF01) */
+        .grade-controles {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            text-align: left;
+            background: #e9d7ac;
+            border: 3px solid var(--cor-sepia-escura);
+            border-radius: 12px;
+            padding: 14px;
+            margin: 14px 0 22px 0;
+            font-size: 0.92rem;
+        }
+
+        .item-controle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tecla-badge {
+            background: #fff;
+            border: 2px solid var(--cor-sepia-escura);
+            border-radius: 6px;
+            padding: 3px 7px;
+            font-weight: 900;
+            font-size: 0.8rem;
+            box-shadow: 2px 2px 0 var(--cor-sepia-escura);
+            white-space: nowrap;
+        }
+
+        /* Botões Estilo Desenho Anos 30 */
+        .btn-cartoon {
+            background-color: var(--cor-amarelo-ouro);
+            color: var(--cor-sepia-escura);
+            font-family: Impact, 'Arial Black', sans-serif;
+            font-size: 1.5rem;
+            letter-spacing: 1px;
+            padding: 12px 32px;
+            border: 4px solid var(--cor-sepia-escura);
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 5px 5px 0px var(--cor-sepia-escura);
+            transition: transform 0.1s, background-color 0.15s, box-shadow 0.1s;
+            text-transform: uppercase;
+        }
+
+        .btn-cartoon:hover {
+            background-color: #ffd54f;
+            transform: translate(-2px, -2px);
+            box-shadow: 7px 7px 0px var(--cor-sepia-escura);
+        }
+
+        .btn-cartoon:active {
+            transform: translate(3px, 3px);
+            box-shadow: 2px 2px 0px var(--cor-sepia-escura);
+        }
+
+        .dica-atalho {
+            margin-top: 12px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #4a3319;
+        }
+
+        /* Destaque para Tela de Vitória / Derrota */
+        .placar-final {
+            font-size: 1.4rem;
+            font-weight: 900;
+            margin: 16px 0 22px 0;
+            padding: 10px;
+            background: #e9d7ac;
+            border: 3px dashed var(--cor-sepia-escura);
+            border-radius: 10px;
+        }
+
+        @media (max-width: 700px) {
+            .grade-controles {
+                grid-template-columns: 1fr;
+            }
+            .titulo-principal {
+                font-size: 2.4rem;
+            }
+            #hud {
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Container Principal com Proporção 16:9 -->
+    <div id="game-wrapper">
+        
+        <!-- Camada de Efeito Visual Anos 1930 (RNF04) -->
+        <div class="efeito-pelicula"></div>
+
+        <!-- HUD Visível no Topo durante toda a Partida (RF02) -->
+        <div id="hud">
+            <!-- Vida do Jogador (3 Pontos de HP) -->
+            <div class="hud-bloco">
+                <span>VIDA:</span>
+                <div class="hp-coracoes" id="hud-hp">
+                    <span class="icone-hp">HP 1</span>
+                    <span class="icone-hp">HP 2</span>
+                    <span class="icone-hp">HP 3</span>
+                </div>
+            </div>
+
+            <!-- Barra de Vida e Fase do Chefe -->
+            <div class="hud-bloco boss-hud-container">
+                <div class="boss-header">
+                    <span id="hud-boss-nome">Barão Von Mostarda</span>
+                    <span id="hud-boss-fase">FASE 1/3</span>
+                </div>
+                <div class="barra-externa">
+                    <div id="boss-hp-fill"></div>
+                </div>
+            </div>
+
+            <!-- Pontuação Atual -->
+            <div class="hud-bloco">
+                <span>PONTOS: <span id="hud-score">00000</span></span>
+            </div>
+
+            <!-- Botão de Áudio Sintetizado Anos 1930 -->
+            <button id="btn-som" class="btn-som-hud" title="Ativar/Desativar Sons e Jazz">🔊 SOM: ON</button>
+        </div>
+
+        <!-- BARRA DE 5 CARTAS (SUPER METER) NO CANTO INFERIOR ESQUERDO -->
+        <div id="hud-cartas-container">
+            <div class="carta-slot"><div class="carta-fill" id="carta-fill-0"></div><div class="carta-simbolo">♠</div></div>
+            <div class="carta-slot"><div class="carta-fill" id="carta-fill-1"></div><div class="carta-simbolo">♥</div></div>
+            <div class="carta-slot"><div class="carta-fill" id="carta-fill-2"></div><div class="carta-simbolo">♣</div></div>
+            <div class="carta-slot"><div class="carta-fill" id="carta-fill-3"></div><div class="carta-simbolo">♦</div></div>
+            <div class="carta-slot"><div class="carta-fill" id="carta-fill-4"></div><div class="carta-simbolo">★</div></div>
+            <div id="aviso-especial-hud">CARREGANDO...</div>
+        </div>
+
+        <!-- TELA INICIAL (RF01) -->
+        <div id="tela-inicial" class="overlay-screen">
+            <div class="cartao-retro">
+                <div class="subtitulo-epoca">★ Estúdios Tinta & Celuloide Apresentam ★</div>
+                <h1 class="titulo-principal">CUPHEAD WEB</h1>
+                <p style="font-weight: bold; margin-bottom: 6px; font-size: 0.95rem;">
+                    Derrote o temperamental <em>Barão Von Mostarda</em> usando Parries, Tiros EX e o Supremo Raio de Leite!
+                </p>
+
+                <!-- Instruções Claras de Controle Atualizadas -->
+                <div class="grade-controles">
+                    <div class="item-controle">
+                        <span class="tecla-badge">A / D</span> ou <span class="tecla-badge">◀ / ▶</span>
+                        <span>Mover para os lados</span>
+                    </div>
+                    <div class="item-controle">
+                        <span class="tecla-badge">S</span> ou <span class="tecla-badge">▼</span>
+                        <span><strong>Agachar</strong> (S + Pulo desce plataforma)</span>
+                    </div>
+                    <div class="item-controle">
+                        <span class="tecla-badge">W</span> <span class="tecla-badge">▲</span> <span class="tecla-badge">ESPAÇO</span>
+                        <span>Pular / <strong>Parry no ar (em tiros Rosas!)</strong></span>
+                    </div>
+                    <div class="item-controle">
+                        <span class="tecla-badge">J</span> ou <span class="tecla-badge">Z</span>
+                        <span>Atirar projéteis contínuos</span>
+                    </div>
+                    <div class="item-controle">
+                        <span class="tecla-badge">L</span> <span class="tecla-badge">X</span> <span class="tecla-badge">E</span>
+                        <span><strong>Tiro EX (1 Carta) / Raio de Leite (5 Cartas)</strong></span>
+                    </div>
+                    <div class="item-controle">
+                        <span class="tecla-badge">SHIFT</span> ou <span class="tecla-badge">K</span>
+                        <span>Dash (Esquiva invencível)</span>
+                    </div>
+                    <div class="item-controle" style="grid-column: 1 / -1; justify-content: center; padding-top: 2px;">
+                        <span class="tecla-badge">P</span>
+                        <span>Pausar / Retomar partida a qualquer momento</span>
+                    </div>
+                </div>
+
+                <button id="btn-jogar" class="btn-cartoon">▶ JOGAR AGORA</button>
+                <div class="dica-atalho">Ou pressione a tecla [ F1 ] para iniciar imediatamente</div>
+            </div>
+        </div>
+
+        <!-- TELA DE PAUSA (RF06) -->
+        <div id="tela-pausa" class="overlay-screen oculto">
+            <div class="cartao-retro" style="max-width: 460px;">
+                <div class="subtitulo-epoca">― Projetor Interrompido ―</div>
+                <h2 class="titulo-principal" style="color: var(--cor-amarelo-ouro);">JOGO PAUSADO</h2>
+                <p style="margin-bottom: 20px; font-weight: bold;">
+                    Respire fundo! Seus tiros e o chefe estão congelados.
+                </p>
+                <button id="btn-retomar" class="btn-cartoon">RETOMAR (P)</button>
+            </div>
+        </div>
+
+        <!-- TELA DE FIM DE JOGO: VITÓRIA OU GAME OVER (RF03 e RF04) -->
+        <div id="tela-fim" class="overlay-screen oculto">
+            <div class="cartao-retro" style="max-width: 540px;">
+                <div id="fim-subtitulo" class="subtitulo-epoca">★ Fim da Apresentação ★</div>
+                <h2 id="fim-titulo" class="titulo-principal">KNOCKOUT!</h2>
+                <p id="fim-mensagem" style="font-weight: bold;">
+                    Você derrotou o Barão Von Mostarda em grande estilo!
+                </p>
+
+                <div class="placar-final">
+                    PONTUAÇÃO FINAL: <span id="fim-pontuacao">0</span>
+                </div>
+
+                <button id="btn-reiniciar" class="btn-cartoon">↻ JOGAR NOVAMENTE</button>
+                <div class="dica-atalho">Ou pressione a tecla [ F1 ] para reiniciar imediatamente</div>
+            </div>
+        </div>
+
+        <!-- Canvas Principal do Jogo -->
+        <canvas id="gameCanvas" width="960" height="540"></canvas>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           CONFIGURAÇÃO INICIAL E REFERÊNCIAS DO DOM (RNF03)
+           ========================================================================== */
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Dimensões lógicas fixas para física consistente em qualquer tela
+        const LARGURA = 960;
+        const ALTURA = 540;
+        const CHAO_Y = 465;
+
+        // Elementos de Interface (HUD e Telas)
+        const telaInicial = document.getElementById('tela-inicial');
+        const telaPausa = document.getElementById('tela-pausa');
+        const telaFim = document.getElementById('tela-fim');
+        const hudHpContainer = document.getElementById('hud-hp');
+        const hudScore = document.getElementById('hud-score');
+        const hudBossFase = document.getElementById('hud-boss-fase');
+        const bossHpFill = document.getElementById('boss-hp-fill');
+
+        const fimTitulo = document.getElementById('fim-titulo');
+        const fimSubtitulo = document.getElementById('fim-subtitulo');
+        const fimMensagem = document.getElementById('fim-mensagem');
+        const fimPontuacao = document.getElementById('fim-pontuacao');
+        const btnSom = document.getElementById('btn-som');
+        const containerCartasHud = document.getElementById('hud-cartas-container');
+        const avisoEspecialHud = document.getElementById('aviso-especial-hud');
+
+        // Estados possíveis da máquina de estados do jogo
+        const ESTADOS = {
+            MENU: 'MENU',
+            JOGANDO: 'JOGANDO',
+            PAUSADO: 'PAUSADO',
+            FIM: 'FIM'
+        };
+
+        let estadoAtual = ESTADOS.MENU;
+        let pontuacao = 0;
+        let tempoJogo = 0;
+        let ultimoTimestamp = 0;
+        let tremorTela = 0; // Intensidade do efeito de Screen Shake
+        let hitstopTimer = 0; // Congelamento dramático de impacto ao acertar um Parry ou Super!
+
+        // Plataformas flutuantes no cenário para enriquecer a esquiva e movimentação
+        const plataformas = [
+            { x: 110, y: 350, largura: 150, altura: 18 },
+            { x: 340, y: 265, largura: 150, altura: 18 },
+            { x: 160, y: 180, largura: 140, altura: 18 }
+        ];
+
+        /* ==========================================================================
+           SINTETIZADOR DE ÁUDIO ESTILO CUPHEAD / ANOS 1930 (WEB AUDIO API PURA)
+           ========================================================================== */
+        const SomCuphead = {
+            ctx: null,
+            mutado: false,
+            timerMusica: 0,
+            passoMusica: 0,
+
+            inicializar() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) {
+                        this.ctx = new AudioCtx();
+                    }
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            },
+
+            alternarMute() {
+                this.inicializar();
+                this.mutado = !this.mutado;
+                btnSom.textContent = this.mutado ? '🔇 SOM: OFF' : '🔊 SOM: ON';
+            },
+
+            // Som de Tiro Rápido (Estalo / Pop vintage)
+            tocarTiro() {
+                if (this.mutado || !this.ctx) return;
+                const agora = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(520, agora);
+                osc.frequency.exponentialRampToValueAtTime(140, agora + 0.055);
+                gain.gain.setValueAtTime(0.14, agora);
+                gain.gain.linearRampToValueAtTime(0.01, agora + 0.055);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(agora);
+                osc.stop(agora + 0.055);
+            },
+
+            // Som de Pulo (Slide Whistle ascendente de desenho animado)
+            tocarPulo() {
+                if (this.mutado || !this.ctx) return;
+                const agora = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(220, agora);
+                osc.frequency.exponentialRampToValueAtTime(660, agora + 0.14);
+                gain.gain.setValueAtTime(0.16, agora);
+                gain.gain.linearRampToValueAtTime(0.01, agora + 0.14);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(agora);
+                osc.stop(agora + 0.14);
+            },
+
+            // Som de Dash (Sopro / Whoosh rápido)
+            tocarDash() {
+                if (this.mutado || !this.ctx) return;
+                const agora = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(320, agora);
+                osc.frequency.exponentialRampToValueAtTime(75, agora + 0.16);
+                gain.gain.setValueAtTime(0.15, agora);
+                gain.gain.linearRampToValueAtTime(0.01, agora + 0.16);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(agora);
+                osc.stop(agora + 0.16);
+            },
+
+            // Som de PARRY! (Slap + Sino Metálico super satisfatório)
+            tocarParry() {
+                if (this.mutado || !this.ctx) return;
+                const agora = this.ctx.currentTime;
+                // Harmônicos de sino brilhante
+                [880, 1318.5, 1760].forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = idx === 0 ? 'triangle' : 'sine';
+                    osc.frequency.setValueAtTime(freq, agora);
+                    gain.gain.setValueAtTime(0.22 / (idx + 1), agora);
+                    gain.gain.exponentialRampToValueAtTime(0.008, agora + 0.35);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(agora);
+                    osc.stop(agora + 0.35);
+                });
+            },
+
+            // Som de Carta Cheia (Ding de Caixa Registradora Antiga)
+            tocarCartaCheia() {
+                if (this.mutado || !this.ctx) return;
+                const agora = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1046.5, agora); // C6
+                osc.frequency.setValueAtTime(1567.98, agora + 0.06); // G6
+                gain.gain.setValueAtTime(0.18, agora);
+                gain.gain.exponentialRampToValueAtTime(0.008, agora + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(agora);
+                osc.stop(agora + 0.25);
+            },
+
+            // Som de Tiro Carregado EX (Disparo energético potente)
+            tocarTiroEX() {
+                if (this.mutado || !this.ctx) return;
+                const agora = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(480, agora);
+                osc.frequency.exponentialRampToValueAtTime(90, agora + 0.32);
+                gain.gain.setValueAtTime(0.28, agora);
+                gain.gain.exponentialRampToValueAtTime(0.01, agora + 0.32);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(agora);
+                osc.stop(agora + 0.32);
+            },
+
+            // Som de GOLPE SUPREMO (Raio de Leite Gigante - Feixe Ressonante)
+            tocarRaioSupremo() {
+                if (this.mutado || !this.ctx) return;
+                const agora = this.ctx.currentTime;
+                [220, 440, 660].forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = i % 2 === 0 ? 'sawtooth' : 'square';
+                    osc.frequency.setValueAtTime(freq, agora);
+                    osc.frequency.linearRampToValueAtTime(freq * 1.25, agora + 0.4);
+                    osc.frequency.linearRampToValueAtTime(freq * 0.9, agora + 1.75);
+                    gain.gain.setValueAtTime(0.14, agora);
+                    gain.gain.linearRampToValueAtTime(0.18, agora + 0.3);
+                    gain.gain.exponentialRampToValueAtTime(0.01, agora + 1.8);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(agora);
+                    osc.stop(agora + 1.8);
+                });
+            },
+
+            // Som de Dano Sofrido (Xícara trincando + trombone triste)
+            tocarDano() {
+                if (this.mutado || !this.ctx) return;
+                const agora = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, agora);
+                osc.frequency.linearRampToValueAtTime(110, agora + 0.35);
+                gain.gain.setValueAtTime(0.26, agora);
+                gain.gain.exponentialRampToValueAtTime(0.01, agora + 0.35);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(agora);
+                osc.stop(agora + 0.35);
+            },
+
+            // Fanfarra de Vitória ou Derrota
+            tocarFimDeJogo(vitoria) {
+                if (this.mutado || !this.ctx) return;
+                const agora = this.ctx.currentTime;
+                const notas = vitoria
+                    ? [523.25, 659.25, 783.99, 1046.5] // Acorde triunfal de Knockout!
+                    : [392.0, 369.99, 349.23, 311.13]; // Descida cromática dramática
+
+                notas.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    const inicio = agora + idx * 0.14;
+                    const dur = idx === notas.length - 1 ? 0.55 : 0.13;
+                    osc.frequency.setValueAtTime(freq, inicio);
+                    gain.gain.setValueAtTime(0.22, inicio);
+                    gain.gain.exponentialRampToValueAtTime(0.01, inicio + dur);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(inicio);
+                    osc.stop(inicio + dur);
+                });
+            },
+
+            // Trilha Sonora Procedural Ragtime / Jazz Anos 1930 durante a luta
+            atualizarMusicaRagtime(dt, faseChefe) {
+                if (this.mutado || !this.ctx) return;
+                // Acelera o andamento do Jazz conforme a fase do chefe fica mais frenética
+                const intervaloNota = faseChefe === 1 ? 0.18 : (faseChefe === 2 ? 0.15 : 0.125);
+                this.timerMusica -= dt;
+
+                if (this.timerMusica <= 0) {
+                    this.timerMusica = intervaloNota;
+                    // Linha de Walking Bass / Ragtime em Dó menor / Blues
+                    const escalaRagtime = [
+                        130.81, 164.81, 196.00, 220.00, 233.08, 220.00, 196.00, 164.81,
+                        146.83, 174.61, 220.00, 261.63, 246.94, 220.00, 196.00, 146.83
+                    ];
+                    const freq = escalaRagtime[this.passoMusica % escalaRagtime.length];
+                    this.passoMusica++;
+
+                    const agora = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, agora);
+                    gain.gain.setValueAtTime(0.06, agora);
+                    gain.gain.exponentialRampToValueAtTime(0.005, agora + intervaloNota * 0.85);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(agora);
+                    osc.stop(agora + intervaloNota * 0.85);
+                }
+            }
+        };
+
+        btnSom.addEventListener('click', () => {
+            SomCuphead.alternarMute();
+            btnSom.blur();
+        });
+
+        /* ==========================================================================
+           MAPEAMENTO DE CONTROLES E EVENTOS DE TECLADO (RF01, RF04, RF06 + NOVOS)
+           ========================================================================== */
+        const teclas = {
+            esquerda: false,
+            direita: false,
+            agachar: false,
+            pulo: false,
+            tiro: false,
+            dash: false,
+            especial: false
+        };
+
+        // Ouvinte de teclas pressionadas
+        window.addEventListener('keydown', (e) => {
+            SomCuphead.inicializar();
+            const codigo = e.code;
+            const tecla = e.key.toLowerCase();
+
+            // RF01 e RF04: Tecla F1 inicia no menu ou reinicia no fim de jogo sem abrir a ajuda do navegador
+            if (codigo === 'F1') {
+                e.preventDefault();
+                if (estadoAtual === ESTADOS.MENU || estadoAtual === ESTADOS.FIM) {
+                    iniciarNovaPartida();
+                }
+                return;
+            }
+
+            // RF06: Tecla P pausa ou retoma a partida a qualquer momento
+            if (tecla === 'p') {
+                if (estadoAtual === ESTADOS.JOGANDO || estadoAtual === ESTADOS.PAUSADO) {
+                    alternarPausa();
+                }
+                return;
+            }
+
+            // Movimentação Lateral (A / D ou Setas Esquerda / Direita)
+            if (tecla === 'a' || codigo === 'ArrowLeft') teclas.esquerda = true;
+            if (tecla === 'd' || codigo === 'ArrowRight') teclas.direita = true;
+
+            // NOVO: Agachar na tecla S ou Seta para Baixo
+            if (tecla === 's' || codigo === 'ArrowDown') {
+                if (codigo === 'ArrowDown') e.preventDefault();
+                teclas.agachar = true;
+            }
+
+            // Pulo ou PARRY NO AR (W, Seta para Cima ou Espaço)
+            if (tecla === 'w' || codigo === 'ArrowUp' || codigo === 'Space') {
+                if (codigo === 'Space' || codigo === 'ArrowUp') e.preventDefault();
+                if (!teclas.pulo && estadoAtual === ESTADOS.JOGANDO) {
+                    tentarPularOuParry();
+                }
+                teclas.pulo = true;
+            }
+
+            // Tecla C opcional dedicada diretamente ao Parry no ar
+            if (tecla === 'c' && estadoAtual === ESTADOS.JOGANDO) {
+                if (!jogador.noChao) {
+                    iniciarGiroParry();
+                }
+            }
+
+            // Atirar Projéteis Contínuos (J ou Z)
+            if (tecla === 'j' || tecla === 'z') teclas.tiro = true;
+
+            // NOVO: Tecla Única para Tiro Carregado (EX) e Golpe Supremo (Raio de Leite) -> L, X ou E
+            if (tecla === 'l' || tecla === 'x' || tecla === 'e') {
+                if (!teclas.especial && estadoAtual === ESTADOS.JOGANDO) {
+                    acionarGolpeCarregadoOuSupremo();
+                }
+                teclas.especial = true;
+            }
+
+            // Dash com Invencibilidade (Shift ou K)
+            if (codigo === 'ShiftLeft' || codigo === 'ShiftRight' || tecla === 'k') {
+                if (!teclas.dash && estadoAtual === ESTADOS.JOGANDO) {
+                    acionarDash();
+                }
+                teclas.dash = true;
+            }
+        });
+
+        // Ouvinte de teclas soltas
+        window.addEventListener('keyup', (e) => {
+            const codigo = e.code;
+            const tecla = e.key.toLowerCase();
+
+            if (tecla === 'a' || codigo === 'ArrowLeft') teclas.esquerda = false;
+            if (tecla === 'd' || codigo === 'ArrowRight') teclas.direita = false;
+            if (tecla === 's' || codigo === 'ArrowDown') teclas.agachar = false;
+            if (tecla === 'w' || codigo === 'ArrowUp' || codigo === 'Space') teclas.pulo = false;
+            if (tecla === 'j' || tecla === 'z') teclas.tiro = false;
+            if (tecla === 'l' || tecla === 'x' || tecla === 'e') teclas.especial = false;
+            if (codigo === 'ShiftLeft' || codigo === 'ShiftRight' || tecla === 'k') teclas.dash = false;
+        });
+
+        // Botões clicáveis na interface
+        document.getElementById('btn-jogar').addEventListener('click', () => {
+            SomCuphead.inicializar();
+            iniciarNovaPartida();
+        });
+        document.getElementById('btn-reiniciar').addEventListener('click', () => {
+            SomCuphead.inicializar();
+            iniciarNovaPartida();
+        });
+        document.getElementById('btn-retomar').addEventListener('click', alternarPausa);
+
+        /* ==========================================================================
+           ESTRUTURA DO JOGADOR (COM AGACHAR, PARRY, CARTAS E RAIO DE LEITE)
+           ========================================================================== */
+        let jogador = {};
+
+        function criarJogador() {
+            return {
+                x: 140,
+                y: CHAO_Y - 64,
+                largura: 48,
+                altura: 64,
+                alturaEmPe: 64,
+                alturaAgachado: 36,
+                agachado: false,
+                ignorarPlataformaTimer: 0,
+                vx: 0,
+                vy: 0,
+                velocidade: 340,
+                forcaPulo: -690,
+                gravidade: 1750,
+                noChao: true,
+                olhandoDireita: true,
+                hp: 3,
+                maxHp: 3,
+                // Controle de Disparo Normal
+                cooldownTiro: 0,
+                cadenciaTiro: 0.13,
+                // Controle de Dash (Esquiva rápida com invencibilidade)
+                emDash: false,
+                tempoDash: 0,
+                duracaoDash: 0.19,
+                cooldownDash: 0,
+                velocidadeDash: 780,
+                direcaoDash: 1,
+                // Mecânica de PARRY no ar (contra projéteis cor-de-rosa)
+                emParry: false,
+                tempoParry: 0,
+                duracaoParry: 0.28, // Janela generosa e responsiva para o Parry
+                cooldownParry: 0,
+                // Sistema de Cartas (Super Meter: 0 a 500 pontos de carga = 5 Cartas de 100)
+                medidorEspecial: 0,
+                maxEspecial: 500,
+                cartasCheiasAnterior: 0,
+                // Golpe Supremo (Raio de Leite Gigante - Intangível)
+                emSupremoLeite: false,
+                tempoSupremo: 0,
+                duracaoSupremo: 1.85,
+                timerDanoSupremo: 0,
+                // Invencibilidade temporária (pós-dano, durante o dash ou durante o Supremo)
+                tempoInvencivel: 0,
+                // Animação de corrida
+                cicloPassos: 0
+            };
+        }
+
+        // Aumenta a barra de Cartas (Super Meter) e toca sino quando completa uma nova carta
+        function adicionarCargaEspecial(quantidade) {
+            if (jogador.emSupremoLeite) return;
+            const cartasAntes = Math.floor(jogador.medidorEspecial / 100);
+            jogador.medidorEspecial = Math.min(jogador.maxEspecial, jogador.medidorEspecial + quantidade);
+            const cartasDepois = Math.floor(jogador.medidorEspecial / 100);
+
+            if (cartasDepois > cartasAntes) {
+                SomCuphead.tocarCartaCheia();
+                if (cartasDepois === 5) {
+                    criarTextoFlutuante('SUPREMO PRONTO! [L / X]', jogador.x + 20, jogador.y - 25, '#ffeb3b');
+                }
+            }
+            atualizarHUD();
+        }
+
+        // Lógica de Pular (no chão), Descer de Plataforma (S + Pulo) ou Dar Parry (no ar)
+        function tentarPularOuParry() {
+            if (jogador.emDash || jogador.emSupremoLeite) return;
+
+            if (jogador.noChao) {
+                // Se estiver segurando S em cima de uma plataforma elevada, desce dela
+                if (teclas.agachar && jogador.y + jogador.altura < CHAO_Y - 5) {
+                    jogador.ignorarPlataformaTimer = 0.25;
+                    jogador.noChao = false;
+                    jogador.y += 4;
+                    return;
+                }
+
+                // Pulo normal a partir do chão
+                if (jogador.agachado) {
+                    jogador.y -= (jogador.alturaEmPe - jogador.alturaAgachado);
+                    jogador.altura = jogador.alturaEmPe;
+                    jogador.agachado = false;
+                }
+                jogador.vy = jogador.forcaPulo;
+                jogador.noChao = false;
+                SomCuphead.tocarPulo();
+                criarExplosaoParticulas(jogador.x + jogador.largura / 2, jogador.y + jogador.altura, '#e0d3b8', 7, 120);
+            } else {
+                // Se já está no ar, apertar Pulo novamente ativa o Giro de PARRY!
+                iniciarGiroParry();
+            }
+        }
+
+        function iniciarGiroParry() {
+            if (jogador.cooldownParry <= 0 && !jogador.emParry && !jogador.noChao) {
+                jogador.emParry = true;
+                jogador.tempoParry = jogador.duracaoParry;
+                jogador.cooldownParry = 0.35;
+                // Verifica imediatamente se já há um projétil rosa colidindo
+                checarColisaoParryRosa();
+            }
+        }
+
+        // Aciona o Tiro Carregado EX (1 a 4 cartas) ou o Golpe Supremo Raio de Leite (5 cartas)
+        function acionarGolpeCarregadoOuSupremo() {
+            if (jogador.emSupremoLeite || jogador.emDash) return;
+
+            const cartasDisponiveis = Math.floor(jogador.medidorEspecial / 100);
+
+            // CASO 1: 5 CARTAS CHEIAS -> GOLPE SUPREMO (SUPER ART I: RAIO DE LEITE GIGANTE!)
+            if (cartasDisponiveis >= 5) {
+                jogador.medidorEspecial = 0;
+                jogador.emSupremoLeite = true;
+                jogador.tempoSupremo = jogador.duracaoSupremo;
+                jogador.timerDanoSupremo = 0;
+                // Fica 100% INTANGÍVEL durante toda a execução e mais uma fração após terminar
+                jogador.tempoInvencivel = jogador.duracaoSupremo + 0.35;
+                jogador.vx = 0;
+                jogador.vy = 0;
+                jogador.olhandoDireita = true;
+
+                // Se estava agachado, levanta para disparar o feixe
+                if (jogador.agachado) {
+                    jogador.y -= (jogador.alturaEmPe - jogador.alturaAgachado);
+                    jogador.altura = jogador.alturaEmPe;
+                    jogador.agachado = false;
+                }
+
+                hitstopTimer = 0.14; // Pausa dramática cinematográfica de ativação
+                tremorTela = 20;
+                SomCuphead.tocarRaioSupremo();
+                criarTextoFlutuante('GOLPE SUPREMO: RAIO DE LEITE!', LARGURA / 2, 130, '#ffffff');
+                criarExplosaoParticulas(jogador.x + jogador.largura, jogador.y + 24, '#ffffff', 30, 320);
+                atualizarHUD();
+            }
+            // CASO 2: 1 A 4 CARTAS -> TIRO CARREGADO (EX MOVE - MEGA DISPARO AZUL)
+            else if (cartasDisponiveis >= 1) {
+                jogador.medidorEspecial -= 100; // Consome 1 carta
+                jogador.olhandoDireita = true;
+                jogador.vx = -220; // Leve recuo estilizado pelo impacto do tiro pesado
+                if (!jogador.noChao) jogador.vy = -120;
+
+                const disparoY = jogador.agachado ? jogador.y + 18 : jogador.y + 26;
+                tirosJogador.push({
+                    x: jogador.x + jogador.largura + 14,
+                    y: disparoY,
+                    vx: 620,
+                    vy: 0,
+                    raio: 24,
+                    dano: 32, // Mais de 6x o dano de um tiro comum!
+                    exMove: true
+                });
+
+                tremorTela = 8;
+                SomCuphead.tocarTiroEX();
+                criarTextoFlutuante('EX MOVE!', jogador.x + 20, jogador.y - 12, '#29b6f6');
+                criarExplosaoParticulas(jogador.x + jogador.largura + 10, disparoY, '#29b6f6', 14, 200);
+                atualizarHUD();
+            } else {
+                // Feedback visual se tentar usar sem nenhuma carta cheia
+                criarTextoFlutuante('SEM CARTAS!', jogador.x + 20, jogador.y - 10, '#bcaaa4');
+            }
+        }
+
+        function acionarDash() {
+            if (jogador.cooldownDash <= 0 && !jogador.emDash && !jogador.emSupremoLeite) {
+                // Levanta se estiver agachado antes do dash
+                if (jogador.agachado) {
+                    jogador.y -= (jogador.alturaEmPe - jogador.alturaAgachado);
+                    jogador.altura = jogador.alturaEmPe;
+                    jogador.agachado = false;
+                }
+
+                jogador.emDash = true;
+                jogador.tempoDash = jogador.duracaoDash;
+                jogador.cooldownDash = 0.65;
+                jogador.vy = 0;
+
+                if (teclas.esquerda) jogador.direcaoDash = -1;
+                else if (teclas.direita) jogador.direcaoDash = 1;
+                else jogador.direcaoDash = jogador.olhandoDireita ? 1 : -1;
+
+                jogador.tempoInvencivel = Math.max(jogador.tempoInvencivel, jogador.duracaoDash + 0.06);
+                SomCuphead.tocarDash();
+
+                criarExplosaoParticulas(
+                    jogador.x + jogador.largura / 2,
+                    jogador.y + jogador.altura / 2,
+                    '#ffffff',
+                    10,
+                    180
+                );
+            }
+        }
+
+        /* ==========================================================================
+           ESTRUTURA DO CHEFE (BARÃO VON MOSTARDA - 3 FASES DE DIFICULDADE - RF05)
+           ========================================================================== */
+        let chefe = {};
+
+        function criarChefe() {
+            return {
+                x: 745,
+                y: 230,
+                baseY: 230,
+                largura: 135,
+                altura: 175,
+                hp: 550,
+                maxHp: 550,
+                fase: 1, // 1: Calmo (100%-65%), 2: Irritado (64%-30%), 3: Fúria (<30%)
+                tempoFase: 0,
+                timerAtaque: 1.0,
+                timerSecundario: 2.2,
+                contadorTiros: 0,
+                flashDano: 0,
+                anguloOscilacao: 0
+            };
+        }
+
+        /* ==========================================================================
+           LISTAS DE PROJÉTEIS, PARTÍCULAS E TEXTOS FLUTUANTES
+           ========================================================================== */
+        let tirosJogador = [];
+        let tirosChefe = [];
+        let particulas = [];
+        let textosFlutuantes = [];
+
+        // Cria pequenas explosões visuais de tinta/fumaça
+        function criarExplosaoParticulas(x, y, cor, quantidade = 8, velocidadeMax = 200) {
+            for (let i = 0; i < quantidade; i++) {
+                const angulo = Math.random() * Math.PI * 2;
+                const vel = 40 + Math.random() * velocidadeMax;
+                particulas.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angulo) * vel,
+                    vy: Math.sin(angulo) * vel,
+                    raio: 3 + Math.random() * 5,
+                    cor: cor,
+                    vida: 0.25 + Math.random() * 0.25,
+                    vidaMax: 0.5
+                });
+            }
+        }
+
+        // Cria avisos animados no estilo quadrinhos ("FASE 2!", "+500", "WALLOP!")
+        function criarTextoFlutuante(texto, x, y, cor = '#fbc02d') {
+            textosFlutuantes.push({
+                texto: texto,
+                x: x,
+                y: y,
+                cor: cor,
+                vida: 1.1
+            });
+        }
+
+        /* ==========================================================================
+           GERENCIAMENTO DE PARTIDA E INTERFACE (RF01, RF02, RF03, RF04, RF06)
+           ========================================================================== */
+        function iniciarNovaPartida() {
+            jogador = criarJogador();
+            chefe = criarChefe();
+            tirosJogador = [];
+            tirosChefe = [];
+            particulas = [];
+            textosFlutuantes = [];
+            pontuacao = 0;
+            tempoJogo = 0;
+            tremorTela = 0;
+
+            // Esconde todas as telas sobrepostas
+            telaInicial.classList.add('oculto');
+            telaPausa.classList.add('oculto');
+            telaFim.classList.add('oculto');
+
+            atualizarHUD();
+            criarTextoFlutuante('WALLOP!', LARGURA / 2, ALTURA / 2, '#ffeb3b');
+
+            estadoAtual = ESTADOS.JOGANDO;
+            ultimoTimestamp = performance.now();
+        }
+
+        function alternarPausa() {
+            if (estadoAtual === ESTADOS.JOGANDO) {
+                estadoAtual = ESTADOS.PAUSADO;
+                telaPausa.classList.remove('oculto');
+            } else if (estadoAtual === ESTADOS.PAUSADO) {
+                estadoAtual = ESTADOS.JOGANDO;
+                telaPausa.classList.add('oculto');
+                ultimoTimestamp = performance.now(); // Evita salto de Delta Time ao despausar
+            }
+        }
+
+        function encerrarPartida(vitoria) {
+            estadoAtual = ESTADOS.FIM;
+            telaFim.classList.remove('oculto');
+            SomCuphead.tocarFimDeJogo(vitoria);
+
+            if (vitoria) {
+                fimSubtitulo.textContent = '★ Uma Vitória Esplêndida! ★';
+                fimTitulo.textContent = 'KNOCKOUT!';
+                fimTitulo.style.color = '#fbc02d';
+                fimMensagem.textContent = 'Você derrotou o Barão Von Mostarda nas 3 fases!';
+            } else {
+                fimSubtitulo.textContent = '― Fim da Linha, Amigão ―';
+                fimTitulo.textContent = 'YOU DIED!';
+                fimTitulo.style.color = '#d32f2f';
+                fimMensagem.textContent = 'Sua xícara trincou! Mas um bom herói nunca desiste.';
+            }
+
+            fimPontuacao.textContent = pontuacao.toString().padStart(5, '0');
+        }
+
+        function atualizarHUD() {
+            // Atualiza os 3 indicadores de HP do jogador
+            const icones = hudHpContainer.querySelectorAll('.icone-hp');
+            icones.forEach((icone, index) => {
+                if (index < jogador.hp) {
+                    icone.classList.remove('perdido');
+                } else {
+                    icone.classList.add('perdido');
+                }
+            });
+
+            // Atualiza a pontuação formatada com zeros à esquerda
+            hudScore.textContent = pontuacao.toString().padStart(5, '0');
+
+            // Atualiza a fase e barra de vida do Chefe
+            hudBossFase.textContent = `FASE ${chefe.fase}/3`;
+            const percentualBoss = Math.max(0, (chefe.hp / chefe.maxHp) * 100);
+            bossHpFill.style.width = `${percentualBoss}%`;
+
+            // Atualiza as 5 Cartas de Especial no canto inferior esquerdo
+            const medidor = jogador.medidorEspecial || 0;
+            const cartasCheias = Math.floor(medidor / 100);
+
+            for (let i = 0; i < 5; i++) {
+                const fillEl = document.getElementById(`carta-fill-${i}`);
+                const slotEl = fillEl.parentElement;
+                const valorCarta = Math.max(0, Math.min(100, medidor - i * 100));
+                fillEl.style.height = `${valorCarta}%`;
+
+                if (valorCarta >= 100) {
+                    slotEl.classList.add('cheia');
+                } else {
+                    slotEl.classList.remove('cheia');
+                }
+            }
+
+            if (cartasCheias >= 5) {
+                containerCartasHud.classList.add('supremo-pronto');
+                avisoEspecialHud.textContent = '★ SUPREMO PRONTO! [L / X]';
+                avisoEspecialHud.style.backgroundColor = '#ffeb3b';
+            } else if (cartasCheias >= 1) {
+                containerCartasHud.classList.remove('supremo-pronto');
+                avisoEspecialHud.textContent = `TIRO EX PRONTO (${cartasCheias}/5) [L / X]`;
+                avisoEspecialHud.style.backgroundColor = '#81d4fa';
+            } else {
+                containerCartasHud.classList.remove('supremo-pronto');
+                avisoEspecialHud.textContent = 'ACERTE TIROS OU DÊ PARRY ROSA!';
+                avisoEspecialHud.style.backgroundColor = 'var(--cor-papel-antigo)';
+            }
+        }
+
+        /* ==========================================================================
+           ATUALIZAÇÃO FÍSICA E LÓGICA DO JOGO (CHAMADA A CADA FRAME)
+           ========================================================================== */
+        function atualizarJogo(dt) {
+            // Congelamento dramático de impacto (Hitstop ao dar Parry ou ativar Supremo)
+            if (hitstopTimer > 0) {
+                hitstopTimer -= dt;
+                return;
+            }
+
+            tempoJogo += dt;
+            if (tremorTela > 0) tremorTela = Math.max(0, tremorTela - dt * 25);
+
+            SomCuphead.atualizarMusicaRagtime(dt, chefe.fase);
+
+            atualizarJogador(dt);
+            atualizarChefe(dt);
+            atualizarProjeteis(dt);
+            atualizarParticulasETextos(dt);
+            verificarColisoes();
+        }
+
+        // 1. Física e Ações do Jogador (Incluindo Agachar, Parry e Golpe Supremo)
+        function atualizarJogador(dt) {
+            if (jogador.cooldownTiro > 0) jogador.cooldownTiro -= dt;
+            if (jogador.cooldownDash > 0) jogador.cooldownDash -= dt;
+            if (jogador.cooldownParry > 0) jogador.cooldownParry -= dt;
+            if (jogador.tempoInvencivel > 0) jogador.tempoInvencivel -= dt;
+            if (jogador.ignorarPlataformaTimer > 0) jogador.ignorarPlataformaTimer -= dt;
+
+            // Atualiza janela ativa do Giro de Parry
+            if (jogador.emParry) {
+                jogador.tempoParry -= dt;
+                checarColisaoParryRosa();
+                if (jogador.tempoParry <= 0 || jogador.noChao) {
+                    jogador.emParry = false;
+                }
+            }
+
+            // ESTADO ESPECIAL: EXECUTANDO O GOLPE SUPREMO (RAIO DE LEITE GIGANTE INTANGÍVEL)
+            if (jogador.emSupremoLeite) {
+                jogador.tempoSupremo -= dt;
+                jogador.timerDanoSupremo -= dt;
+                jogador.tempoInvencivel = 0.25; // Garante intangibilidade total durante o raio
+                tremorTela = 14;
+
+                // Causa dano contínuo massivo ao chefe se ele estiver na faixa do Raio de Leite
+                if (jogador.timerDanoSupremo <= 0) {
+                    jogador.timerDanoSupremo = 0.08;
+                    const feixeY = jogador.y + 28;
+
+                    // O Raio de Leite é largo (cobre 110px de altura) e atravessa toda a tela até a direita
+                    if (feixeY + 55 > chefe.y && feixeY - 55 < chefe.y + chefe.altura) {
+                        causarDanoAoChefe(10, false); // Não recarrega as cartas usando o próprio supremo
+                        criarExplosaoParticulas(
+                            chefe.x + 25 + Math.random() * 60,
+                            Math.max(chefe.y + 20, Math.min(chefe.y + chefe.altura - 20, feixeY + (Math.random() - 0.5) * 60)),
+                            '#ffffff',
+                            6,
+                            240
+                        );
+                    }
+
+                    // O Raio de Leite também pulveriza projéteis comuns no caminho!
+                    for (let i = tirosChefe.length - 1; i >= 0; i--) {
+                        const p = tirosChefe[i];
+                        if (p.x > jogador.x && Math.abs(p.y - feixeY) < 60 && !p.parryavel) {
+                            criarExplosaoParticulas(p.x, p.y, '#ffffff', 5, 120);
+                            tirosChefe.splice(i, 1);
+                        }
+                    }
+                }
+
+                if (jogador.tempoSupremo <= 0) {
+                    jogador.emSupremoLeite = false;
+                }
+                return; // Enquanto dispara o Raio de Leite, flutua fixo no ar
+            }
+
+            // LÓGICA DE AGACHAR (Tecla S ou Seta para Baixo quando no chão)
+            const querAgachar = teclas.agachar && jogador.noChao && !jogador.emDash;
+            if (querAgachar && !jogador.agachado) {
+                jogador.agachado = true;
+                jogador.y += (jogador.alturaEmPe - jogador.alturaAgachado);
+                jogador.altura = jogador.alturaAgachado;
+            } else if (!querAgachar && jogador.agachado) {
+                jogador.agachado = false;
+                jogador.y -= (jogador.alturaEmPe - jogador.alturaAgachado);
+                jogador.altura = jogador.alturaEmPe;
+            }
+
+            const yAnterior = jogador.y;
+
+            // Movimento durante o Dash vs Movimento Normal
+            if (jogador.emDash) {
+                jogador.tempoDash -= dt;
+                jogador.vx = jogador.direcaoDash * jogador.velocidadeDash;
+                jogador.vy = 0;
+
+                if (Math.random() < 0.65) {
+                    particulas.push({
+                        x: jogador.x + jogador.largura / 2,
+                        y: jogador.y + jogador.altura / 2 + (Math.random() * 20 - 10),
+                        vx: -jogador.direcaoDash * 60,
+                        vy: (Math.random() - 0.5) * 40,
+                        raio: 6 + Math.random() * 5,
+                        cor: 'rgba(255, 255, 255, 0.8)',
+                        vida: 0.2,
+                        vidaMax: 0.2
+                    });
+                }
+
+                if (jogador.tempoDash <= 0) {
+                    jogador.emDash = false;
+                }
+            } else {
+                // Movimentação Horizontal (se estiver agachado, fica firme no lugar ou só vira o olhar)
+                jogador.vx = 0;
+                const multVel = jogador.agachado ? 0.35 : 1.0; // Anda mais devagar agachado
+                if (teclas.esquerda) {
+                    jogador.vx = -jogador.velocidade * multVel;
+                    jogador.olhandoDireita = false;
+                }
+                if (teclas.direita) {
+                    jogador.vx = jogador.velocidade * multVel;
+                    jogador.olhandoDireita = true;
+                }
+
+                // Aplica Gravidade
+                jogador.vy += jogador.gravidade * dt;
+            }
+
+            // Atualiza Posição
+            jogador.x += jogador.vx * dt;
+            jogador.y += jogador.vy * dt;
+
+            // Animação das perninhas quando corre no chão
+            if (Math.abs(jogador.vx) > 10 && jogador.noChao && !jogador.agachado) {
+                jogador.cicloPassos += dt * 16;
+            } else {
+                jogador.cicloPassos = 0;
+            }
+
+            // Colisão com as Plataformas Flutuantes (apenas quando caindo e sem ignorar plataforma)
+            jogador.noChao = false;
+            if (jogador.vy >= 0 && jogador.ignorarPlataformaTimer <= 0) {
+                for (const plat of plataformas) {
+                    const dentroHorizontal =
+                        jogador.x + jogador.largura * 0.75 > plat.x &&
+                        jogador.x + jogador.largura * 0.25 < plat.x + plat.largura;
+                    const cruzouTopo =
+                        yAnterior + jogador.altura <= plat.y + 12 &&
+                        jogador.y + jogador.altura >= plat.y;
+
+                    if (dentroHorizontal && cruzouTopo) {
+                        jogador.y = plat.y - jogador.altura;
+                        jogador.vy = 0;
+                        jogador.noChao = true;
+                        jogador.emParry = false;
+                        break;
+                    }
+                }
+            }
+
+            // Colisão com o Chão Principal do Cenário
+            if (jogador.y + jogador.altura >= CHAO_Y) {
+                jogador.y = CHAO_Y - jogador.altura;
+                jogador.vy = 0;
+                jogador.noChao = true;
+                jogador.emParry = false;
+            }
+
+            // Limites Laterais da Arena
+            if (jogador.x < 20) jogador.x = 20;
+            if (jogador.x > 660) jogador.x = 660;
+
+            // Disparo Contínuo de Projéteis na direção do Chefe (Teclas J ou Z) - Funciona em pé ou agachado!
+            if (teclas.tiro && jogador.cooldownTiro <= 0) {
+                jogador.cooldownTiro = jogador.cadenciaTiro;
+                jogador.olhandoDireita = true;
+
+                const pontaX = jogador.x + jogador.largura + 6;
+                // Ajusta a altura do tiro caso o jogador esteja agachado
+                const alturaBaseTiro = jogador.agachado ? 16 : 28;
+                const pontaY = jogador.y + alturaBaseTiro + (Math.random() * 6 - 3);
+
+                tirosJogador.push({
+                    x: pontaX,
+                    y: pontaY,
+                    vx: 760,
+                    vy: 0,
+                    raio: 9,
+                    dano: 5,
+                    exMove: false
+                });
+
+                SomCuphead.tocarTiro();
+                criarExplosaoParticulas(pontaX, pontaY, '#4fc3f7', 4, 90);
+            }
+        }
+
+        // 2. Inteligência Artificial do Chefe e Progressão de Dificuldade (RF05 + Projéteis Rosas Parryáveis)
+        function atualizarChefe(dt) {
+            if (chefe.flashDano > 0) chefe.flashDano -= dt;
+            chefe.tempoFase += dt;
+
+            // Velocidade de flutuação vertical aumenta a cada fase
+            const velocidadeOscilacao = chefe.fase === 1 ? 1.8 : (chefe.fase === 2 ? 3.0 : 4.5);
+            const amplitudeOscilacao = chefe.fase === 1 ? 65 : (chefe.fase === 2 ? 95 : 110);
+
+            chefe.anguloOscilacao += dt * velocidadeOscilacao;
+            chefe.y = chefe.baseY + Math.sin(chefe.anguloOscilacao) * amplitudeOscilacao;
+
+            // Controle de Ataques Primários e Secundários conforme a Fase
+            chefe.timerAtaque -= dt;
+            chefe.timerSecundario -= dt;
+
+            const bocaX = chefe.x + 10;
+            const bocaY = chefe.y + chefe.altura * 0.48;
+
+            // --- COMPORTAMENTO FASE 1: Calmo (Tiros retos cadenciados, a cada 3 tiros 1 é ROSA para Parry!) ---
+            if (chefe.fase === 1) {
+                if (chefe.timerAtaque <= 0) {
+                    chefe.timerAtaque = 1.2;
+                    chefe.contadorTiros++;
+                    const ehRosa = (chefe.contadorTiros % 3 === 0);
+                    dispararProjetilChefe(bocaX, bocaY, -350, 0, 'RETO', '#ff7043', 15, ehRosa);
+                }
+            }
+            // --- COMPORTAMENTO FASE 2: Irritado (Leque Triplo com centro Rosa + Projéteis Senoidais Rosas) ---
+            else if (chefe.fase === 2) {
+                if (chefe.timerAtaque <= 0) {
+                    chefe.timerAtaque = 1.05;
+                    chefe.contadorTiros++;
+                    const angulos = [-0.24, 0, 0.24];
+                    angulos.forEach((ang, idx) => {
+                        const vel = 410;
+                        // O tiro central do leque frequentemente vem cor-de-rosa para permitir Parry!
+                        const ehRosa = (idx === 1 && chefe.contadorTiros % 2 === 0);
+                        dispararProjetilChefe(
+                            bocaX,
+                            bocaY,
+                            -Math.cos(ang) * vel,
+                            Math.sin(ang) * vel,
+                            'RETO',
+                            '#ffa726',
+                            14,
+                            ehRosa
+                        );
+                    });
+                }
+
+                // Tiro Especial Senoidal (Alta chance de ser Rosa para recompensar o pulo + Parry)
+                if (chefe.timerSecundario <= 0) {
+                    chefe.timerSecundario = 2.2;
+                    dispararProjetilChefe(bocaX, bocaY, -340, 0, 'SENOIDE', '#ab47bc', 16, true);
+                }
+            }
+            // --- COMPORTAMENTO FASE 3: Fúria Total (Engrenagens pelo chão + Rajadas Rápidas com Rosas) ---
+            else if (chefe.fase === 3) {
+                if (chefe.timerAtaque <= 0) {
+                    chefe.timerAtaque = 0.72;
+                    chefe.contadorTiros++;
+                    const alvoX = jogador.x + jogador.largura / 2;
+                    const alvoY = jogador.y + jogador.altura / 2;
+                    const angulo = Math.atan2(alvoY - bocaY, alvoX - bocaX);
+                    const vel = 480;
+                    const ehRosa = (chefe.contadorTiros % 3 === 0);
+
+                    dispararProjetilChefe(
+                        bocaX,
+                        bocaY,
+                        Math.cos(angulo) * vel,
+                        Math.sin(angulo) * vel,
+                        'RETO',
+                        '#ef5350',
+                        15,
+                        ehRosa
+                    );
+                }
+
+                // Ataque Terrestre: Roda que corre pelo chão
+                if (chefe.timerSecundario <= 0) {
+                    chefe.timerSecundario = 1.75;
+                    dispararProjetilChefe(
+                        chefe.x + 20,
+                        CHAO_Y - 22,
+                        -510,
+                        0,
+                        'TERRESTRE',
+                        '#ffeb3b',
+                        20,
+                        false
+                    );
+                }
+            }
+        }
+
+        function dispararProjetilChefe(x, y, vx, vy, tipo, corPadrao, raio, parryavel = false) {
+            const corFinal = parryavel ? '#ff4081' : corPadrao;
+            tirosChefe.push({
+                x: x,
+                y: y,
+                yInicial: y,
+                vx: vx,
+                vy: vy,
+                tipo: tipo,
+                cor: corFinal,
+                raio: parryavel ? raio + 2 : raio,
+                parryavel: parryavel,
+                tempoVida: 0
+            });
+            criarExplosaoParticulas(x, y, corFinal, 6, 110);
+        }
+
+        // 3. Atualização de Todos os Projéteis em Tela
+        function atualizarProjeteis(dt) {
+            // Projéteis do Jogador
+            for (let i = tirosJogador.length - 1; i >= 0; i--) {
+                const t = tirosJogador[i];
+                t.x += t.vx * dt;
+                t.y += t.vy * dt;
+
+                if (t.x > LARGURA + 40) {
+                    tirosJogador.splice(i, 1);
+                }
+            }
+
+            // Projéteis do Chefe
+            for (let i = tirosChefe.length - 1; i >= 0; i--) {
+                const p = tirosChefe[i];
+                p.tempoVida += dt;
+                p.x += p.vx * dt;
+
+                if (p.tipo === 'SENOIDE') {
+                    // Movimento ondulante clássico de jogos Boss Rush
+                    p.y = p.yInicial + Math.sin(p.tempoVida * 7.5) * 75;
+                } else {
+                    p.y += p.vy * dt;
+                }
+
+                // Remove projéteis que saíram dos limites da tela
+                if (p.x < -50 || p.x > LARGURA + 50 || p.y < -50 || p.y > ALTURA + 50) {
+                    tirosChefe.splice(i, 1);
+                }
+            }
+        }
+
+        // 4. Atualização de Partículas e Avisos Visuais
+        function atualizarParticulasETextos(dt) {
+            for (let i = particulas.length - 1; i >= 0; i--) {
+                const pt = particulas[i];
+                pt.x += pt.vx * dt;
+                pt.y += pt.vy * dt;
+                pt.vida -= dt;
+                if (pt.vida <= 0) particulas.splice(i, 1);
+            }
+
+            for (let i = textosFlutuantes.length - 1; i >= 0; i--) {
+                const tf = textosFlutuantes[i];
+                tf.y -= 35 * dt;
+                tf.vida -= dt;
+                if (tf.vida <= 0) textosFlutuantes.splice(i, 1);
+            }
+        }
+
+        /* ==========================================================================
+           DETECÇÃO DE COLISÕES, PARRY ROSA E PONTUAÇÃO (RF02, RF03)
+           ========================================================================== */
+        // Verifica se o Giro de Parry do jogador atingiu algum projétil COR-DE-ROSA
+        function checarColisaoParryRosa() {
+            if (!jogador.emParry) return false;
+
+            const jCentroX = jogador.x + jogador.largura / 2;
+            const jCentroY = jogador.y + jogador.altura / 2;
+            const raioAlcanceParry = 44; // Alcance generoso para tornar o Parry divertido e responsivo
+
+            for (let i = tirosChefe.length - 1; i >= 0; i--) {
+                const p = tirosChefe[i];
+                if (!p.parryavel) continue;
+
+                const dist = Math.hypot(p.x - jCentroX, p.y - jCentroY);
+                if (dist <= p.raio + raioAlcanceParry) {
+                    // SUCESSO NO PARRY!
+                    const impactX = p.x;
+                    const impactY = p.y;
+                    tirosChefe.splice(i, 1);
+
+                    // Efeitos clássicos do Parry de Cuphead:
+                    jogador.emParry = false;
+                    jogador.vy = jogador.forcaPulo * 0.92; // Pulo alto extra após o Parry
+                    jogador.cooldownDash = 0; // Reseta o dash no ar
+                    jogador.tempoInvencivel = Math.max(jogador.tempoInvencivel, 0.35); // Proteção pós-parry
+
+                    hitstopTimer = 0.13; // Freeze frame dramático!
+                    tremorTela = 12;
+                    pontuacao += 100; // Bônus de pontuação pelo Parry
+                    adicionarCargaEspecial(100); // ENCHE 1 CARTA INTEIRA IMEDIATAMENTE!
+
+                    SomCuphead.tocarParry();
+                    criarExplosaoParticulas(impactX, impactY, '#ff80ab', 26, 300);
+                    criarTextoFlutuante('PARRY! +1 CARTA!', impactX, impactY - 15, '#ff4081');
+                    atualizarHUD();
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Função centralizada para causar dano ao chefe e verificar mudança de fase ou vitória
+        function causarDanoAoChefe(dano, gerarCargaCartas = true) {
+            if (estadoAtual !== ESTADOS.JOGANDO) return;
+
+            chefe.hp -= dano;
+            chefe.flashDano = 0.06;
+            pontuacao += dano * 2;
+
+            if (gerarCargaCartas) {
+                // Cada ponto de dano enche a barra de cartas (cerca de 12 tiros normais = 1 Carta cheia)
+                adicionarCargaEspecial(dano * 1.7);
+            }
+
+            // Verifica transição de Fases baseada no percentual de HP (RF05)
+            const proporcaoHp = chefe.hp / chefe.maxHp;
+            if (proporcaoHp <= 0.65 && chefe.fase === 1) {
+                chefe.fase = 2;
+                pontuacao += 500;
+                tremorTela = 12;
+                criarExplosaoParticulas(chefe.x + chefe.largura / 2, chefe.y + chefe.altura / 2, '#ff9800', 28, 300);
+                criarTextoFlutuante('FASE 2: IRRITADO! +500', chefe.x - 40, chefe.y, '#ff9800');
+            } else if (proporcaoHp <= 0.30 && chefe.fase === 2) {
+                chefe.fase = 3;
+                pontuacao += 500;
+                tremorTela = 16;
+                criarExplosaoParticulas(chefe.x + chefe.largura / 2, chefe.y + chefe.altura / 2, '#e53935', 36, 360);
+                criarTextoFlutuante('FASE 3: FÚRIA TOTAL! +500', chefe.x - 60, chefe.y, '#ff5252');
+            }
+
+            atualizarHUD();
+
+            // Verifica se o Chefe foi derrotado
+            if (chefe.hp <= 0) {
+                chefe.hp = 0;
+                pontuacao += 1000;
+                atualizarHUD();
+                criarExplosaoParticulas(
+                    chefe.x + chefe.largura / 2,
+                    chefe.y + chefe.altura / 2,
+                    '#ffeb3b',
+                    50,
+                    400
+                );
+                encerrarPartida(true);
+            }
+        }
+
+        function verificarColisoes() {
+            // 1. Tiros Normais e EX do Jogador contra o Chefe
+            for (let i = tirosJogador.length - 1; i >= 0; i--) {
+                const t = tirosJogador[i];
+
+                const acertouChefe =
+                    t.x + t.raio > chefe.x + 12 &&
+                    t.x - t.raio < chefe.x + chefe.largura - 12 &&
+                    t.y + t.raio > chefe.y + 12 &&
+                    t.y - t.raio < chefe.y + chefe.altura - 12;
+
+                if (acertouChefe) {
+                    tirosJogador.splice(i, 1);
+                    const corParticula = t.exMove ? '#29b6f6' : '#fff59d';
+                    const qtdParticulas = t.exMove ? 18 : 6;
+                    if (t.exMove) tremorTela = 10;
+
+                    criarExplosaoParticulas(t.x, t.y, corParticula, qtdParticulas, 200);
+                    causarDanoAoChefe(t.dano || 5, !t.exMove);
+                    if (estadoAtual === ESTADOS.FIM) return;
+                }
+            }
+
+            // Verifica primeiro se o jogador está fazendo um Parry em projétil rosa
+            if (jogador.emParry && checarColisaoParryRosa()) {
+                return;
+            }
+
+            // Se o jogador estiver invencível (Dash, Pós-dano ou Golpe Supremo Raio de Leite), é 100% intangível!
+            if (jogador.tempoInvencivel > 0 || jogador.emSupremoLeite) return;
+
+            // Centro do corpo do jogador (ajustado automaticamente quando agachado!)
+            const jCentroX = jogador.x + jogador.largura / 2;
+            const jCentroY = jogador.y + jogador.altura / 2;
+            const jRaioHitbox = jogador.agachado ? 13 : 18;
+
+            // 2. Projéteis do Chefe contra o Jogador
+            for (let i = tirosChefe.length - 1; i >= 0; i--) {
+                const p = tirosChefe[i];
+                const dx = p.x - jCentroX;
+                const dy = p.y - jCentroY;
+                const distancia = Math.hypot(dx, dy);
+
+                if (distancia < p.raio + jRaioHitbox) {
+                    tirosChefe.splice(i, 1);
+                    aplicarDanoAoJogador();
+                    return;
+                }
+            }
+
+            // 3. Contato direto com o corpo do Chefe
+            const encostouNoChefe =
+                jogador.x + jogador.largura - 10 > chefe.x + 15 &&
+                jogador.x + 10 < chefe.x + chefe.largura - 15 &&
+                jogador.y + jogador.altura - 10 > chefe.y + 15 &&
+                jogador.y + 10 < chefe.y + chefe.altura - 15;
+
+            if (encostouNoChefe) {
+                aplicarDanoAoJogador();
+            }
+        }
+
+        function aplicarDanoAoJogador() {
+            jogador.hp -= 1;
+            jogador.tempoInvencivel = 1.6;
+            jogador.vy = -320;
+            tremorTela = 14;
+            SomCuphead.tocarDano();
+
+            criarExplosaoParticulas(
+                jogador.x + jogador.largura / 2,
+                jogador.y + jogador.altura / 2,
+                '#d32f2f',
+                22,
+                260
+            );
+            criarTextoFlutuante('-1 HP!', jogador.x, jogador.y - 10, '#ff5252');
+            atualizarHUD();
+
+            if (jogador.hp <= 0) {
+                encerrarPartida(false);
+            }
+        }
+
+        /* ==========================================================================
+           RENDERIZAÇÃO GRÁFICA NO CANVAS (ESTILO CARTOON ANOS 1930 - RNF04)
+           ========================================================================== */
+        function desenharJogo() {
+            ctx.save();
+
+            // Aplica efeito de tremor de câmera (Screen Shake) quando há impacto
+            if (tremorTela > 0) {
+                const ox = (Math.random() - 0.5) * tremorTela;
+                const oy = (Math.random() - 0.5) * tremorTela;
+                ctx.translate(ox, oy);
+            }
+
+            desenharCenarioAnos30();
+            desenharPlataformas();
+            desenharChefeCartoon();
+            desenharRaioSupremoDeLeite();
+            desenharJogadorXicara();
+            desenharProjeteis();
+            desenharParticulasETextos();
+
+            ctx.restore();
+        }
+
+        // Renderiza o colossal GOLPE SUPREMO (Raio de Leite Gigante) saindo da cabeça do personagem
+        function desenharRaioSupremoDeLeite() {
+            if (!jogador.emSupremoLeite) return;
+
+            ctx.save();
+            const inicioX = jogador.x + jogador.largura + 4;
+            const centroY = jogador.y + 26;
+            const larguraFeixe = LARGURA - inicioX + 40;
+            const espessuraBase = 78 + Math.sin(tempoJogo * 45) * 16;
+
+            // Aura externa azulada/creme brilhante
+            ctx.fillStyle = 'rgba(225, 245, 254, 0.45)';
+            ctx.fillRect(inicioX, centroY - espessuraBase * 0.7, larguraFeixe, espessuraBase * 1.4);
+
+            // Corpo principal do Feixe de Leite com contornos grossos estilo anos 1930
+            ctx.fillStyle = '#fffdf7';
+            ctx.strokeStyle = '#1f140a';
+            ctx.lineWidth = 4.5;
+
+            ctx.beginPath();
+            ctx.moveTo(inicioX, centroY - espessuraBase / 2);
+
+            // Ondas de leite/creme no topo do feixe
+            for (let x = inicioX; x <= LARGURA + 20; x += 40) {
+                const ondaY = Math.sin(x * 0.04 - tempoJogo * 35) * 8;
+                ctx.lineTo(x, centroY - espessuraBase / 2 + ondaY);
+            }
+            // Ondas na base do feixe
+            for (let x = LARGURA + 20; x >= inicioX; x -= 40) {
+                const ondaY = Math.cos(x * 0.04 - tempoJogo * 35) * 8;
+                ctx.lineTo(x, centroY + espessuraBase / 2 + ondaY);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Linhas de velocidade internas de alta potência
+            ctx.strokeStyle = '#b3e5fc';
+            ctx.lineWidth = 3;
+            for (let i = -2; i <= 2; i++) {
+                const offsetY = i * 12 + Math.sin(tempoJogo * 50 + i) * 4;
+                ctx.beginPath();
+                ctx.moveTo(inicioX + 10, centroY + offsetY);
+                ctx.lineTo(LARGURA, centroY + offsetY);
+                ctx.stroke();
+            }
+
+            // Esguicho circular giratório na origem do disparo
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#1f140a';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.ellipse(inicioX, centroY, 20, espessuraBase * 0.58, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // 1. Cenário de Teatro / Feira Antiga dos Anos 1930
+        function desenharCenarioAnos30() {
+            // Céu em gradiente sépia/creme
+            const gradCeu = ctx.createLinearGradient(0, 0, 0, CHAO_Y);
+            gradCeu.addColorStop(0, '#e3cfa1');
+            gradCeu.addColorStop(1, '#f7ecd0');
+            ctx.fillStyle = gradCeu;
+            ctx.fillRect(0, 0, LARGURA, CHAO_Y);
+
+            // Raios solares retrô girando suavemente ao fundo
+            ctx.save();
+            ctx.translate(LARGURA * 0.5, CHAO_Y * 0.45);
+            ctx.rotate(tempoJogo * 0.08);
+            ctx.fillStyle = 'rgba(215, 185, 130, 0.28)';
+            const numRaios = 16;
+            for (let i = 0; i < numRaios; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.arc(0, 0, 900, (i * 2 * Math.PI) / numRaios, ((i * 2 + 1) * Math.PI) / numRaios);
+                ctx.closePath();
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // Colinas clássicas ao fundo com olhinhos "pie-cut" dos anos 1930
+            ctx.fillStyle = '#d2b887';
+            ctx.strokeStyle = '#2b1d0e';
+            ctx.lineWidth = 3;
+
+            // Colina esquerda
+            ctx.beginPath();
+            ctx.arc(210, CHAO_Y, 135, Math.PI, 0);
+            ctx.fill();
+            ctx.stroke();
+
+            // Colina central
+            ctx.beginPath();
+            ctx.arc(520, CHAO_Y, 175, Math.PI, 0);
+            ctx.fill();
+            ctx.stroke();
+
+            // Piso de madeira de palco antigo
+            ctx.fillStyle = '#6e4726';
+            ctx.fillRect(0, CHAO_Y, LARGURA, ALTURA - CHAO_Y);
+
+            // Linha grossa do chão
+            ctx.beginPath();
+            ctx.moveTo(0, CHAO_Y);
+            ctx.lineTo(LARGURA, CHAO_Y);
+            ctx.strokeStyle = '#2b1d0e';
+            ctx.lineWidth = 5;
+            ctx.stroke();
+
+            // Tábuas de perspectiva no palco
+            ctx.strokeStyle = 'rgba(43, 29, 14, 0.45)';
+            ctx.lineWidth = 3;
+            for (let x = 40; x < LARGURA; x += 90) {
+                ctx.beginPath();
+                ctx.moveTo(x, CHAO_Y);
+                ctx.lineTo(x - (LARGURA / 2 - x) * 0.25, ALTURA);
+                ctx.stroke();
+            }
+        }
+
+        // 2. Desenho das Plataformas Flutuantes de Madeira
+        function desenharPlataformas() {
+            for (const plat of plataformas) {
+                ctx.save();
+                ctx.fillStyle = '#8d5b34';
+                ctx.strokeStyle = '#2b1d0e';
+                ctx.lineWidth = 3.5;
+
+                ctx.beginPath();
+                ctx.roundRect(plat.x, plat.y, plat.largura, plat.altura, 8);
+                ctx.fill();
+                ctx.stroke();
+
+                // Detalhe interno da madeira
+                ctx.fillStyle = '#a97449';
+                ctx.fillRect(plat.x + 8, plat.y + 4, plat.largura - 16, 5);
+                ctx.restore();
+            }
+        }
+
+        // 3. Desenho Procedural do Jogador (Com animações de Agachar, Giro de Parry e Golpe Supremo)
+        function desenharJogadorXicara() {
+            if (!jogador.hp) return;
+
+            ctx.save();
+
+            // Quando está usando o Golpe Supremo, brilha intensamente (intangível)
+            if (jogador.emSupremoLeite) {
+                ctx.shadowColor = '#ffeb3b';
+                ctx.shadowBlur = 18;
+            } else if (jogador.tempoInvencivel > 0 && Math.floor(tempoJogo * 20) % 2 === 0) {
+                ctx.globalAlpha = 0.45;
+            }
+
+            const cx = jogador.x + jogador.largura / 2;
+            const cy = jogador.y + jogador.altura / 2;
+
+            ctx.translate(cx, cy);
+            if (!jogador.olhandoDireita) {
+                ctx.scale(-1, 1);
+            }
+
+            // SE ESTIVER EM GIRO DE PARRY NO AR: desenha aura cor-de-rosa e gira a xícara!
+            if (jogador.emParry) {
+                ctx.save();
+                ctx.strokeStyle = '#ff4081';
+                ctx.lineWidth = 3.5;
+                ctx.setLineDash([7, 5]);
+                ctx.rotate(tempoJogo * 18);
+                ctx.beginPath();
+                ctx.arc(0, 0, 38, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+
+                ctx.rotate(tempoJogo * 28);
+            }
+
+            // SE ESTIVER AGACHADO (Tecla S): Achata a xícara ("Squash" clássico de cartoon)
+            if (jogador.agachado) {
+                ctx.scale(1.22, 0.62);
+            }
+
+            ctx.strokeStyle = '#1f140a';
+            ctx.lineWidth = 3;
+
+            // Perninhas animadas
+            const balancoPerna = Math.sin(jogador.cicloPassos) * 10;
+            ctx.fillStyle = '#0288d1';
+            ctx.fillRect(-13, 12, 26, 10);
+            ctx.strokeRect(-13, 12, 26, 10);
+
+            // Sapatos amarelos arredondados
+            ctx.fillStyle = '#fbc02d';
+            ctx.beginPath();
+            ctx.ellipse(-7 + balancoPerna, 26, 9, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.ellipse(8 - balancoPerna, 26, 9, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Alça da Xícara (lado esquerdo/traseiro)
+            ctx.beginPath();
+            ctx.arc(-18, -6, 9, Math.PI * 0.5, Math.PI * 1.5);
+            ctx.strokeStyle = '#1f140a';
+            ctx.lineWidth = 5;
+            ctx.stroke();
+            ctx.strokeStyle = '#f5f5f5';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Canudo curvo vermelho e branco no topo
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#1f140a';
+            ctx.fillStyle = '#e53935';
+            ctx.beginPath();
+            ctx.moveTo(-6, -20);
+            ctx.lineTo(-14, -36);
+            ctx.lineTo(-4, -39);
+            ctx.lineTo(2, -20);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Cabeça / Corpo em formato de Xícara (inclinada pra frente se estiver disparando o Raio de Leite)
+            ctx.fillStyle = jogador.emSupremoLeite ? '#fff9c4' : '#f2efe9';
+            ctx.beginPath();
+            ctx.roundRect(-18, -22, 36, 34, [4, 4, 16, 16]);
+            ctx.fill();
+            ctx.stroke();
+
+            // Olhos Grandes estilo "Pie-Cut" (anos 1930)
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.ellipse(6, -8, 8, 10, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Pupila com recorte triangular
+            ctx.fillStyle = '#1f140a';
+            ctx.beginPath();
+            ctx.moveTo(7, -8);
+            ctx.arc(7, -8, 5, 0.35, Math.PI * 1.85);
+            ctx.closePath();
+            ctx.fill();
+
+            // Luva branca apontando e atirando
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(21, -1, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // 4. Desenho Procedural do Chefe (Barão Von Mostarda - Muda expressão e cor por Fase)
+        function desenharChefeCartoon() {
+            ctx.save();
+
+            const cx = chefe.x + chefe.largura / 2;
+            const cy = chefe.y + chefe.altura / 2;
+
+            // Leve compressão elástica ("Squash and Stretch" típico de animações de 1930)
+            const escalaX = 1 + Math.sin(tempoJogo * 6) * 0.035;
+            const escalaY = 1 - Math.sin(tempoJogo * 6) * 0.035;
+
+            ctx.translate(cx, cy);
+            ctx.scale(escalaX, escalaY);
+
+            // Define a cor principal do Chefe de acordo com a Fase atual (RF05)
+            let corCorpo = '#fbc02d'; // Fase 1: Amarelo Mostarda Calmo
+            if (chefe.fase === 2) corCorpo = '#fb8c00'; // Fase 2: Laranja Irritado
+            if (chefe.fase === 3) corCorpo = '#d32f2f'; // Fase 3: Vermelho Fúria Total
+            if (chefe.flashDano > 0) corCorpo = '#ffffff'; // Pisca branco ao ser atingido
+
+            ctx.strokeStyle = '#1f140a';
+            ctx.lineWidth = 4.5;
+
+            // Cartola Clássica dos Anos 1930 no topo do Chefe
+            ctx.fillStyle = '#2b1d0e';
+            ctx.fillRect(-45, -102, 90, 12); // Aba da cartola
+            ctx.strokeRect(-45, -102, 90, 12);
+            ctx.fillRect(-30, -142, 60, 40); // Topo da cartola
+            ctx.strokeRect(-30, -142, 60, 40);
+            ctx.fillStyle = '#d32f2f';
+            ctx.fillRect(-30, -112, 60, 8); // Fita vermelha
+
+            // Corpo arredondado imponente
+            ctx.fillStyle = corCorpo;
+            ctx.beginPath();
+            ctx.roundRect(-62, -90, 124, 170, 45);
+            ctx.fill();
+            ctx.stroke();
+
+            // Olhos expressivos que mudam conforme a Fase
+            ctx.fillStyle = chefe.fase === 3 ? '#fff59d' : '#ffffff';
+            ctx.beginPath();
+            ctx.ellipse(-22, -32, 18, 24, 0, 0, Math.PI * 2);
+            ctx.ellipse(16, -32, 18, 24, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Pupilas
+            ctx.fillStyle = '#1f140a';
+            const raioPupila = chefe.fase === 3 ? 6 : 9;
+            ctx.beginPath();
+            ctx.arc(-25, -30, raioPupila, 0, Math.PI * 2);
+            ctx.arc(13, -30, raioPupila, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Sobrancelhas (inclinam mais a cada fase de raiva)
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            if (chefe.fase === 1) {
+                ctx.moveTo(-40, -60);
+                ctx.lineTo(-8, -56);
+                ctx.moveTo(0, -56);
+                ctx.lineTo(32, -60);
+            } else if (chefe.fase === 2) {
+                ctx.moveTo(-42, -66);
+                ctx.lineTo(-6, -50);
+                ctx.moveTo(0, -50);
+                ctx.lineTo(36, -66);
+            } else {
+                ctx.moveTo(-45, -72);
+                ctx.lineTo(-4, -46);
+                ctx.moveTo(-2, -46);
+                ctx.lineTo(39, -72);
+            }
+            ctx.stroke();
+
+            // Bigode Clássico Anos 1930
+            ctx.fillStyle = '#4e342e';
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+            ctx.moveTo(-8, -2);
+            ctx.quadraticCurveTo(-38, -16, -55, 6);
+            ctx.quadraticCurveTo(-28, 12, -8, 4);
+            ctx.quadraticCurveTo(18, 12, 45, 6);
+            ctx.quadraticCurveTo(28, -16, -8, -2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Boca / Sorriso maligno
+            ctx.fillStyle = '#2b1d0e';
+            ctx.beginPath();
+            ctx.arc(-6, 18, 24, 0, Math.PI);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Dentes brancos
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(-20, 18, 9, 9);
+            ctx.fillRect(-8, 18, 9, 9);
+            ctx.fillRect(4, 18, 9, 9);
+
+            ctx.restore();
+        }
+
+        // 5. Desenho dos Projéteis do Jogador (Normal e EX) e do Chefe (Incluindo Rosas para Parry!)
+        function desenharProjeteis() {
+            // Tiros Azuis Brilhantes do Jogador (Comuns e Mega Bala EX)
+            for (const t of tirosJogador) {
+                ctx.save();
+                ctx.fillStyle = t.exMove ? '#00e5ff' : '#29b6f6';
+                ctx.strokeStyle = '#1f140a';
+                ctx.lineWidth = t.exMove ? 3.5 : 2.5;
+
+                if (t.exMove) {
+                    // Desenho especial da Mega Bala Carregada (EX Move)
+                    ctx.beginPath();
+                    ctx.arc(t.x, t.y, t.raio, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Anéis de energia ao redor do EX Move
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.arc(t.x, t.y, t.raio * 0.65, 0, Math.PI * 1.4);
+                    ctx.stroke();
+                } else {
+                    ctx.beginPath();
+                    ctx.ellipse(t.x, t.y, t.raio * 1.4, t.raio * 0.85, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Brilho interno branco
+                    ctx.fillStyle = '#e1f5fe';
+                    ctx.beginPath();
+                    ctx.arc(t.x + 2, t.y - 2, t.raio * 0.4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+
+            // Projéteis do Chefe (Normais, Senoidais, Engrenagens e PROJÉTEIS ROSAS DE PARRY)
+            for (const p of tirosChefe) {
+                ctx.save();
+                ctx.translate(p.x, p.y);
+
+                // Se for um ataque ROSA (Parryável), desenha um halo pulsante cor-de-rosa bem visível
+                if (p.parryavel) {
+                    const pulso = 1 + Math.sin(tempoJogo * 18) * 0.15;
+                    ctx.save();
+                    ctx.scale(pulso, pulso);
+                    ctx.strokeStyle = '#ff80ab';
+                    ctx.fillStyle = 'rgba(255, 64, 129, 0.28)';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.raio + 7, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                ctx.rotate(p.tempoVida * 8);
+
+                ctx.fillStyle = p.cor;
+                ctx.strokeStyle = '#1f140a';
+                ctx.lineWidth = 3;
+
+                if (p.tipo === 'TERRESTRE') {
+                    // Desenha uma roda dentada giratória que corre pelo chão
+                    const dentes = 8;
+                    ctx.beginPath();
+                    for (let i = 0; i < dentes * 2; i++) {
+                        const r = i % 2 === 0 ? p.raio + 4 : p.raio - 4;
+                        const ang = (i * Math.PI) / dentes;
+                        const px = Math.cos(ang) * r;
+                        const py = Math.sin(ang) * r;
+                        if (i === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                } else {
+                    // Orbe de energia retrô
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.raio, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Estrela / Brilho no centro dos projéteis Rosas para destacar ainda mais o Parry
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(-p.raio * 0.3, -p.raio * 0.3, p.raio * 0.35, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        // 6. Desenho de Partículas e Avisos Flutuantes
+        function desenharParticulasETextos() {
+            for (const pt of particulas) {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, pt.vida / pt.vidaMax);
+                ctx.fillStyle = pt.cor;
+                ctx.strokeStyle = '#1f140a';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, pt.raio, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            for (const tf of textosFlutuantes) {
+                ctx.save();
+                ctx.globalAlpha = Math.min(1, tf.vida);
+                ctx.font = "900 26px Impact, 'Arial Black', sans-serif";
+                ctx.textAlign = 'center';
+                ctx.lineWidth = 5;
+                ctx.strokeStyle = '#1f140a';
+                ctx.strokeText(tf.texto, tf.x, tf.y);
+                ctx.fillStyle = tf.cor;
+                ctx.fillText(tf.texto, tf.x, tf.y);
+                ctx.restore();
+            }
+        }
+
+        /* ==========================================================================
+           MOTOR DO JOGO PRINCIPAL - GAME LOOP FLUIDO (RNF02)
+           ========================================================================== */
+        function gameLoop(timestamp) {
+            // Calcula o Delta Time em segundos (limitado a 0.05s para evitar saltos se a aba perder foco)
+            const dt = Math.min(0.05, (timestamp - ultimoTimestamp) / 1000 || 0);
+            ultimoTimestamp = timestamp;
+
+            // Atualiza a física apenas se a partida estiver em andamento (RF06: congela na pausa)
+            if (estadoAtual === ESTADOS.JOGANDO) {
+                atualizarJogo(dt);
+            }
+
+            // Desenha a cena no Canvas
+            desenharJogo();
+
+            // Solicita o próximo quadro mantendo 60 FPS fluidos
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Inicializa entidades padrão para exibir o cenário vivo atrás do Menu Inicial
+        jogador = criarJogador();
+        chefe = criarChefe();
+        atualizarHUD();
+
+        // Dispara o loop de animação assim que a página carrega
+        window.onload = () => {
+            ultimoTimestamp = performance.now();
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>
